@@ -25,5 +25,6 @@ class DatabaseSeeder extends Seeder
         $admin->assignRole('Admin');
 
         $this->call(TechnicianSeeder::class);
+        $this->call(CustomerSeeder::class);
     }
 }
