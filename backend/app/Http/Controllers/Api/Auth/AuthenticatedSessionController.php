@@ -23,6 +23,14 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
+        if (Auth::user()->status !== 'active') {
+            Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages([
+                'email' => __('auth.failed'),
+            ]);
+        }
+
         $request->session()->regenerate();
 
         $user = $request->user();
