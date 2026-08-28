@@ -1,0 +1,176 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #eef2ff;
+  --color-primary-100: #e0e7ff;
+  --color-primary-200: #c7d2fe;
+  --color-primary-300: #a5b4fc;
+  --color-primary-400: #818cf8;
+  --color-primary-500: #6366f1; /* Main Brand (Indigo-ish for Tech/Cold) */
+  --color-primary-600: #4f46e5;
+  --color-primary-700: #4338ca;
+  --color-primary-800: #3730a3;
+  --color-primary-900: #312e81;
+
+  --color-accent-500: #0ea5e9; /* Sky Blue for HVAC feel */
+  
+  --color-success-100: #dcfce7;
+  --color-success-500: #22c55e;
+  --color-success-700: #15803d;
+  
+  --color-warning-100: #fef9c3;
+  --color-warning-500: #eab308;
+  --color-warning-700: #a16207;
+  
+  --color-error-100: #fee2e2;
+  --color-error-500: #ef4444;
+  --color-error-700: #b91c1c;
+
+  --color-surface-50: #f8fafc; /* Page Background */
+  --color-surface-100: #f1f5f9;
+  --color-surface-200: #e2e8f0; /* Borders */
+  --color-surface-300: #cbd5e1;
+  --color-surface-400: #94a3b8;
+  --color-surface-500: #64748b; /* Muted Text */
+  --color-surface-600: #475569;
+  --color-surface-700: #334155;
+  --color-surface-800: #1e293b;
+  --color-surface-900: #0f172a; /* Headings */
+}
+
+@layer base {
+  :root {
+    --background: var(--color-surface-50);
+    --foreground: var(--color-surface-900);
+    --card: #ffffff;
+    --card-foreground: var(--color-surface-900);
+    --border: var(--color-surface-200);
+  }
+
+  * {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-200);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-surface-300);
+}
+
+/* Utilities for hiding scrollbars on certain components if needed */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@media print {
+  /* Hide unnecessary UI elements */
+  .print\:hidden, nav, header, aside, button {
+    display: none !important;
+  }
+  
+  /* Reset background and text for high contrast */
+  body {
+    background-color: white !important;
+    color: black !important;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Ensure main content takes full width */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Flatten cards and remove shadows */
+  .bg-white, .bg-surface-50, .bg-card, .bg-surface-100 {
+    background-color: white !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Force borders where needed for structure */
+  .border, .border-b, .border-t, table, th, td {
+    border-color: #000 !important;
+  }
+  
+  /* Improve typography for print */
+  h1, h2, h3, h4, h5, h6, p, span, td, th {
+    color: black !important;
+    page-break-inside: avoid;
+  }
+
+  /* Force background graphics to print (e.g., badges) */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Avoid page breaks inside important sections */
+  table, img, .avoid-page-break {
+    page-break-inside: avoid;
+  }
+  
+  /* Ensure A4 size dimensions if needed, though browser handles this mostly */
+  @page {
+    margin: 1.5cm;
+  }
+}
+
+@layer base {
+  .dark {
+    --background: #020617;
+    --foreground: #f8fafc;
+    --card: #0f172a;
+    --card-foreground: #f8fafc;
+    --border: #1e293b;
+
+    /* Flip surface colors */
+    --color-surface-50: #020617;
+    --color-surface-100: #0f172a;
+    --color-surface-200: #1e293b;
+    --color-surface-300: #334155;
+    --color-surface-400: #475569;
+    --color-surface-500: #64748b;
+    --color-surface-600: #94a3b8;
+    --color-surface-700: #cbd5e1;
+    --color-surface-800: #e2e8f0;
+    --color-surface-900: #f8fafc;
+
+    /* Tweak primary colors slightly for dark mode contrast */
+    --color-primary-50: #312e81;
+    --color-primary-100: #3730a3;
+    --color-primary-200: #4338ca;
+    --color-primary-300: #4f46e5;
+    --color-primary-400: #6366f1;
+    --color-primary-500: #818cf8;
+    --color-primary-600: #a5b4fc;
+    --color-primary-700: #c7d2fe;
+    --color-primary-800: #e0e7ff;
+    --color-primary-900: #eef2ff;
+  }
+}
