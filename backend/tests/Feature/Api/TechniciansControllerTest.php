@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Models\User;
+use App\Models\WorkOrder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Role;
@@ -111,5 +112,33 @@ class TechniciansControllerTest extends TestCase
         $response->assertJsonPath('data.completionRate', 87);
         $response->assertJsonPath('data.currentJobId', null);
         $response->assertJsonPath('data.jobsToday', 0);
+    }
+
+    public function test_show_computes_work_stats_from_real_work_orders(): void
+    {
+        $technician = $this->technician();
+        $admin = User::factory()->create();
+        $admin->assignRole('Admin');
+
+        $inProgress = WorkOrder::factory()->create([
+            'technician_id' => $technician->id, 'status' => 'In Progress',
+            'scheduled_at' => today()->setTime(9, 0), 'duration_hours' => 2,
+        ]);
+        WorkOrder::factory()->create([
+            'technician_id' => $technician->id, 'status' => 'Scheduled',
+            'scheduled_at' => today()->setTime(14, 0), 'duration_hours' => 1.5,
+        ]);
+        // Outside this week: should not count toward hoursThisWeek.
+        WorkOrder::factory()->create([
+            'technician_id' => $technician->id, 'status' => 'Completed',
+            'scheduled_at' => now()->subWeeks(2), 'duration_hours' => 10,
+        ]);
+
+        $response = $this->actingAs($admin)->getJson("/api/v1/technicians/{$technician->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.currentJobId', $inProgress->id);
+        $response->assertJsonPath('data.jobsToday', 2);
+        $response->assertJsonPath('data.hoursThisWeek', 3.5);
     }
 }

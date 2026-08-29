@@ -19,7 +19,11 @@ class CustomersController extends Controller
         $this->authorize('viewAny', Customer::class);
 
         $customers = Customer::query()
-            ->withCount(['locations', 'equipment'])
+            ->withCount([
+                'locations',
+                'equipment',
+                'workOrders as active_work_orders_count' => fn ($query) => $query->active(),
+            ])
             ->orderBy('name')
             ->paginate($request->integer('per_page', 25));
 
@@ -33,7 +37,11 @@ class CustomersController extends Controller
             'status' => $request->validated('status', 'Active'),
         ]);
 
-        return (new CustomerResource($customer->loadCount(['locations', 'equipment'])))
+        return (new CustomerResource($customer->loadCount([
+            'locations',
+            'equipment',
+            'workOrders as active_work_orders_count' => fn ($query) => $query->active(),
+        ])))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
@@ -42,14 +50,22 @@ class CustomersController extends Controller
     {
         $this->authorize('view', $customer);
 
-        return new CustomerResource($customer->loadCount(['locations', 'equipment']));
+        return new CustomerResource($customer->loadCount([
+            'locations',
+            'equipment',
+            'workOrders as active_work_orders_count' => fn ($query) => $query->active(),
+        ]));
     }
 
     public function update(UpdateCustomerRequest $request, Customer $customer): CustomerResource
     {
         $customer->update($request->validated());
 
-        return new CustomerResource($customer->loadCount(['locations', 'equipment']));
+        return new CustomerResource($customer->loadCount([
+            'locations',
+            'equipment',
+            'workOrders as active_work_orders_count' => fn ($query) => $query->active(),
+        ]));
     }
 
     public function destroy(Customer $customer): Response

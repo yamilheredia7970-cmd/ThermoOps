@@ -23,10 +23,9 @@ class TechnicianResource extends JsonResource
             'avatar' => $this->avatar ?? $this->initials(),
             'skills' => $profile?->skills ?? [],
             'status' => $profile?->availability_status ?? 'Off Duty',
-            // Wired to real assignment/scheduling data once work orders exist (Phase 3).
-            'currentJobId' => null,
-            'jobsToday' => 0,
-            'hoursThisWeek' => 0,
+            'currentJobId' => $this->current_job_id ?? null,
+            'jobsToday' => $this->jobs_today_count ?? 0,
+            'hoursThisWeek' => $this->hours_this_week_sum ? (float) $this->hours_this_week_sum : 0.0,
             'rating' => $profile ? (float) $profile->rating : 0.0,
             'completionRate' => $profile?->completion_rate ?? 0,
         ];

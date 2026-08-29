@@ -31,4 +31,9 @@ class Customer extends Model
     {
         return $this->hasMany(Equipment::class);
     }
+
+    public function workOrders(): HasMany
+    {
+        return $this->hasMany(WorkOrder::class);
+    }
 }

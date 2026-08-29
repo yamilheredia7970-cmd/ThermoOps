@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class CustomerResource extends JsonResource
+class WorkOrderLineItemResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,13 +16,12 @@ class CustomerResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
             'type' => $this->type,
-            'since' => $this->since->toDateString(),
-            'locationsCount' => $this->locations_count,
-            'equipmentCount' => $this->equipment_count,
-            'activeWorkOrders' => $this->active_work_orders_count,
-            'status' => $this->status,
+            'description' => $this->description,
+            'inventoryItemId' => $this->inventory_item_id,
+            'quantity' => (float) $this->quantity,
+            'unitPrice' => (float) $this->unit_price,
+            'subtotal' => $this->subtotal(),
         ];
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Equipment;
 use App\Models\Location;
 use App\Models\User;
+use App\Models\WorkOrder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Role;
@@ -52,6 +53,21 @@ class CustomersControllerTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('data.0.locationsCount', 1);
         $response->assertJsonPath('data.0.equipmentCount', 2);
+    }
+
+    public function test_index_counts_only_scheduled_and_in_progress_work_orders_as_active(): void
+    {
+        $customer = Customer::factory()->create();
+        $location = Location::factory()->for($customer)->create();
+        WorkOrder::factory()->create(['customer_id' => $customer->id, 'location_id' => $location->id, 'status' => 'Scheduled']);
+        WorkOrder::factory()->create(['customer_id' => $customer->id, 'location_id' => $location->id, 'status' => 'In Progress']);
+        WorkOrder::factory()->create(['customer_id' => $customer->id, 'location_id' => $location->id, 'status' => 'Completed']);
+        WorkOrder::factory()->create(['customer_id' => $customer->id, 'location_id' => $location->id, 'status' => 'Cancelled']);
+
+        $response = $this->actingAs($this->userWithRole('Admin'))->getJson("/api/v1/customers/{$customer->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.activeWorkOrders', 2);
     }
 
     public function test_index_is_forbidden_for_a_technician(): void
