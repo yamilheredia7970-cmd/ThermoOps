@@ -48,4 +48,14 @@ class WorkOrderPolicy
 
         return $user->hasAnyRole(['Admin', 'Dispatcher']) || $user->id === $workOrder->technician_id;
     }
+
+    /**
+     * Determine whether the user can add/remove photo attachments. Unlike
+     * line items this stays open on a Completed work order, since a
+     * technician typically attaches job photos right as they close it out.
+     */
+    public function manageAttachments(User $user, WorkOrder $workOrder): bool
+    {
+        return $user->hasAnyRole(['Admin', 'Dispatcher']) || $user->id === $workOrder->technician_id;
+    }
 }

@@ -30,5 +30,6 @@ class DatabaseSeeder extends Seeder
         $this->call(WorkOrderSeeder::class);
         $this->call(ToolSeeder::class);
         $this->call(MaintenancePlanSeeder::class);
+        $this->call(ServiceReportSeeder::class);
     }
 }
