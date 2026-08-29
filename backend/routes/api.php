@@ -6,7 +6,9 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EquipmentController;
 use App\Http\Controllers\Api\InventoryItemsController;
 use App\Http\Controllers\Api\LocationsController;
+use App\Http\Controllers\Api\MaintenancePlansController;
 use App\Http\Controllers\Api\TechniciansController;
+use App\Http\Controllers\Api\ToolsController;
 use App\Http\Controllers\Api\UsersController;
 use App\Http\Controllers\Api\WorkOrderLineItemsController;
 use App\Http\Controllers\Api\WorkOrdersController;
@@ -29,6 +31,9 @@ Route::prefix('v1')->group(function () {
             ->parameters(['inventory-items' => 'inventoryItem']);
         Route::apiResource('work-orders', WorkOrdersController::class)
             ->parameters(['work-orders' => 'workOrder']);
+        Route::apiResource('tools', ToolsController::class);
+        Route::apiResource('maintenance-plans', MaintenancePlansController::class)
+            ->parameters(['maintenance-plans' => 'maintenancePlan']);
 
         Route::post('work-orders/{workOrder}/line-items', [WorkOrderLineItemsController::class, 'store']);
         Route::delete('work-orders/{workOrder}/line-items/{lineItem}', [WorkOrderLineItemsController::class, 'destroy'])
