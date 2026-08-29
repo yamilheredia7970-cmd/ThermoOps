@@ -1,11 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Plus, MoreHorizontal, Building2, Users } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Building2, Users } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
-import { mockCustomers } from '../data/mockData';
+import { SkeletonTable } from '../components/ui/Skeleton';
+import { useApiList } from '../hooks/useApi';
+import { Customer } from '../types';
 
 export function Customers() {
   const navigate = useNavigate();
+  const { data: customers, loading } = useApiList<Customer>('/customers');
+  const commercialCount = customers?.filter(c => c.type === 'Commercial').length ?? 0;
+  const residentialCount = customers?.filter(c => c.type === 'Residential').length ?? 0;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
@@ -31,7 +37,7 @@ export function Customers() {
           </div>
           <div>
             <p className="text-sm font-medium text-surface-500">Commercial Clients</p>
-            <h3 className="text-2xl font-bold text-surface-900">42</h3>
+            <h3 className="text-2xl font-bold text-surface-900">{commercialCount}</h3>
           </div>
         </Card>
         <Card className="p-4 flex items-center gap-4">
@@ -40,7 +46,7 @@ export function Customers() {
           </div>
           <div>
             <p className="text-sm font-medium text-surface-500">Residential Clients</p>
-            <h3 className="text-2xl font-bold text-surface-900">108</h3>
+            <h3 className="text-2xl font-bold text-surface-900">{residentialCount}</h3>
           </div>
         </Card>
       </div>
@@ -65,6 +71,7 @@ export function Customers() {
           </div>
         </div>
 
+        {loading ? <SkeletonTable /> : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-surface-500 uppercase bg-surface-50 border-b border-surface-200">
@@ -79,7 +86,7 @@ export function Customers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 bg-white">
-              {mockCustomers.map((customer) => (
+              {(customers ?? []).map((customer) => (
                 <tr 
                   key={customer.id} 
                   onClick={() => navigate(`/customers/${customer.id}`)}
@@ -114,6 +121,7 @@ export function Customers() {
             </tbody>
           </table>
         </div>
+        )}
       </Card>
     </div>
   );

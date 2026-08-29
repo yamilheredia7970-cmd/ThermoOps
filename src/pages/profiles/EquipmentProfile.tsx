@@ -1,34 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Wind, Activity, Wrench, AlertTriangle, CheckCircle, Clock as ClockIcon } from 'lucide-react';
 import { Card, Badge, Button } from '../../components/ui';
 import { Skeleton, SkeletonCard } from '../../components/ui/Skeleton';
 import { ActivityFeed } from '../../components/ActivityFeed';
-import { mockEquipment, mockWorkOrders, mockActivities } from '../../data/mockData';
+import { useApiResource, useApiList } from '../../hooks/useApi';
+import { Equipment, WorkOrder } from '../../types';
 
 export function EquipmentProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, [id]);
-  
-  const equipment = mockEquipment.find(e => e.id === id) || mockEquipment[0];
-  const relatedOrders = mockWorkOrders.filter(wo => wo.equipmentId === equipment.id);
-  const equipmentActivities = mockActivities.filter(a => a.relatedId === equipment.id);
+  const { data: equipment, loading } = useApiResource<Equipment>(id ? `/equipment/${id}` : null);
+  const { data: relatedOrdersData } = useApiList<WorkOrder>(id ? `/work-orders?equipment_id=${id}` : null);
+  const relatedOrders = relatedOrdersData ?? [];
 
-  // Mock timeline events
+  // Service history derived from real work orders on this equipment, plus
+  // the installation date, instead of a fabricated timeline.
   const timeline = [
-    { date: '2026-08-28', event: 'Scheduled Maintenance', tech: 'Carlos Martinez', status: 'Upcoming' },
-    { date: '2026-05-10', event: 'Filter Replacement & Coil Clean', tech: 'Marcus Johnson', status: 'Completed' },
-    { date: '2025-11-22', event: 'Annual Inspection', tech: 'Sarah O\'Connor', status: 'Completed' },
-    { date: equipment.installationDate, event: 'System Installation', tech: 'David Kim', status: 'Completed' },
-  ];
+    ...relatedOrders.map(wo => ({
+      date: wo.scheduledDate,
+      event: `${wo.serviceType}: ${wo.description}`,
+      tech: wo.technicianName ?? 'Unassigned',
+      status: wo.status === 'Completed' ? 'Completed' : wo.status === 'Scheduled' ? 'Upcoming' : wo.status,
+    })),
+    ...(equipment?.installationDate ? [{ date: equipment.installationDate, event: 'System Installation', tech: '—', status: 'Completed' }] : []),
+  ].sort((a, b) => (a.date < b.date ? 1 : -1));
 
-  if (loading) {
+  if (loading || !equipment) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -79,7 +78,7 @@ export function EquipmentProfile() {
                 </div>
               </div>
               <Badge variant={
-                equipment.status === 'Good' ? 'success' : 
+                equipment.status === 'Good' ? 'success' :
                 equipment.status === 'Critical' ? 'error' : 'warning'
               } className="text-sm px-3 py-1">
                 {equipment.status}
@@ -90,14 +89,14 @@ export function EquipmentProfile() {
               <div className="grid grid-cols-2 gap-4 pb-4 border-b border-surface-100">
                 <div>
                   <p className="text-xs text-surface-500 mb-1">Asset ID</p>
-                  <p className="font-mono text-sm font-semibold text-surface-900">{equipment.id}</p>
+                  <p className="font-mono text-sm font-semibold text-surface-900">EQ-{equipment.id}</p>
                 </div>
                 <div>
                   <p className="text-xs text-surface-500 mb-1">Type</p>
                   <p className="font-medium text-sm text-surface-900">{equipment.type}</p>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4 pb-4 border-b border-surface-100">
                 <div>
                   <p className="text-xs text-surface-500 mb-1">Serial Number</p>
@@ -112,11 +111,11 @@ export function EquipmentProfile() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-surface-500 mb-1">Installation Date</p>
-                  <p className="font-medium text-sm text-surface-900">{equipment.installationDate}</p>
+                  <p className="font-medium text-sm text-surface-900">{equipment.installationDate ?? '—'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-surface-500 mb-1">Warranty Expiration</p>
-                  <p className="font-medium text-sm text-surface-900">{equipment.warrantyExpiration}</p>
+                  <p className="font-medium text-sm text-surface-900">{equipment.warrantyExpiration ?? '—'}</p>
                 </div>
               </div>
             </div>
@@ -154,23 +153,27 @@ export function EquipmentProfile() {
             <h3 className="font-bold text-surface-900 mb-6 flex items-center gap-2">
               <ClockIcon className="w-5 h-5 text-surface-400" /> Service Timeline
             </h3>
-            
-            <div className="relative pl-6 space-y-8 before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-surface-200">
-              {timeline.map((item, idx) => (
-                <div key={idx} className="relative flex items-start gap-4">
-                  <div className={`absolute left-0 -translate-x-[25px] w-4 h-4 rounded-full border-4 border-white ${item.status === 'Upcoming' ? 'bg-primary-500' : 'bg-surface-300'}`}></div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="font-semibold text-surface-900">{item.event}</span>
-                      <Badge variant={item.status === 'Upcoming' ? 'info' : 'default'} className="text-[10px] px-2 py-0.5">{item.status}</Badge>
-                    </div>
-                    <div className="text-sm text-surface-500">
-                      <span>{item.date}</span> • <span>Tech: {item.tech}</span>
+
+            {timeline.length > 0 ? (
+              <div className="relative pl-6 space-y-8 before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-surface-200">
+                {timeline.map((item, idx) => (
+                  <div key={idx} className="relative flex items-start gap-4">
+                    <div className={`absolute left-0 -translate-x-[25px] w-4 h-4 rounded-full border-4 border-white ${item.status === 'Upcoming' ? 'bg-primary-500' : 'bg-surface-300'}`}></div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="font-semibold text-surface-900">{item.event}</span>
+                        <Badge variant={item.status === 'Upcoming' ? 'info' : 'default'} className="text-[10px] px-2 py-0.5">{item.status}</Badge>
+                      </div>
+                      <div className="text-sm text-surface-500">
+                        <span>{item.date}</span> • <span>Tech: {item.tech}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-surface-500">No recorded service history yet.</p>
+            )}
           </Card>
 
           <Card className="p-6">
@@ -178,15 +181,15 @@ export function EquipmentProfile() {
               <h3 className="font-bold text-surface-900 flex items-center gap-2">
                 <Wrench className="w-5 h-5 text-surface-400" /> Active Work Orders
               </h3>
-              <Button size="sm" variant="outline">Create WO</Button>
+              <Button size="sm" variant="outline" onClick={() => navigate('/work-orders')}>View Work Orders</Button>
             </div>
-            
+
             {relatedOrders.length > 0 ? (
               <div className="divide-y divide-surface-100 border border-surface-200 rounded-lg overflow-hidden">
                 {relatedOrders.map(wo => (
                   <div key={wo.id} className="p-4 flex items-center justify-between bg-white hover:bg-surface-50 transition-colors">
                     <div>
-                      <h4 className="font-semibold text-surface-900 text-sm">{wo.serviceType} <span className="text-surface-400 font-normal">#{wo.id}</span></h4>
+                      <h4 className="font-semibold text-surface-900 text-sm">{wo.serviceType} <span className="text-surface-400 font-normal">#WO-{wo.id}</span></h4>
                       <p className="text-xs text-surface-500 mt-1">{wo.description}</p>
                     </div>
                     <div className="text-right">
@@ -205,7 +208,8 @@ export function EquipmentProfile() {
             )}
           </Card>
 
-          <ActivityFeed activities={equipmentActivities} title="Equipment Activity Log" />
+          {/* Real activity feed isn't wired up yet (no Activities API); shown empty rather than stale mock data. */}
+          <ActivityFeed activities={[]} title="Equipment Activity Log" />
         </div>
       </div>
     </div>

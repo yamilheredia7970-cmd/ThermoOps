@@ -1,24 +1,27 @@
 import React, { useState } from 'react';
 import { Wind, Lock, Mail, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui';
+import { useAuth } from '../contexts/AuthContext';
+import { ApiError } from '../lib/api';
 
-interface LoginProps {
-  onLogin: () => void;
-}
-
-export function Login({ onLogin }: LoginProps) {
+export function Login() {
+  const { login } = useAuth();
   const [email, setEmail] = useState('admin@thermoops.com');
   const [password, setPassword] = useState('demo1234');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | undefined>(undefined);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate network delay
-    setTimeout(() => {
+    setError(undefined);
+    try {
+      await login(email, password);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.fieldError('email') ?? err.message : 'Unable to sign in.');
+    } finally {
       setIsLoading(false);
-      onLogin();
-    }, 800);
+    }
   };
 
   return (
@@ -89,6 +92,11 @@ export function Login({ onLogin }: LoginProps) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="px-4 py-3 rounded-lg bg-error-50 border border-error-200 text-error-700 text-sm">
+                {error}
+              </div>
+            )}
             <div>
               <label className="block text-sm font-semibold text-surface-700 mb-1.5">Work Email</label>
               <div className="relative">

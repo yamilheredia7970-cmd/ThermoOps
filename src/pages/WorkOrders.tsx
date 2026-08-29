@@ -1,9 +1,13 @@
 import React from 'react';
 import { Filter, Search, Plus, MoreHorizontal } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
-import { mockWorkOrders } from '../data/mockData';
+import { SkeletonTable } from '../components/ui/Skeleton';
+import { useApiList } from '../hooks/useApi';
+import { WorkOrder } from '../types';
 
 export function WorkOrders() {
+  const { data: workOrders, loading } = useApiList<WorkOrder>('/work-orders');
+  const list = workOrders ?? [];
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
@@ -46,6 +50,7 @@ export function WorkOrders() {
           </div>
         </div>
 
+        {loading ? <SkeletonTable /> : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-surface-500 uppercase bg-surface-50 border-b border-surface-200">
@@ -60,10 +65,10 @@ export function WorkOrders() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 bg-white">
-              {mockWorkOrders.map((wo) => (
+              {list.map((wo) => (
                 <tr key={wo.id} className="hover:bg-surface-50 transition-colors cursor-pointer group">
                   <td className="px-5 py-4 whitespace-nowrap">
-                    <div className="font-semibold text-surface-900">{wo.id}</div>
+                    <div className="font-semibold text-surface-900">WO-{wo.id}</div>
                     <div className="text-xs text-surface-500 mt-0.5 truncate max-w-[120px]" title={wo.equipmentName}>{wo.equipmentName}</div>
                   </td>
                   <td className="px-5 py-4">
@@ -116,8 +121,9 @@ export function WorkOrders() {
             </tbody>
           </table>
         </div>
+        )}
         <div className="p-4 border-t border-surface-200 flex items-center justify-between text-sm text-surface-500 bg-surface-50 rounded-b-xl">
-          <span>Showing 1 to {mockWorkOrders.length} of {mockWorkOrders.length} entries</span>
+          <span>Showing 1 to {list.length} of {list.length} entries</span>
           <div className="flex gap-1">
             <Button variant="outline" size="sm" disabled>Previous</Button>
             <Button variant="outline" size="sm" disabled>Next</Button>

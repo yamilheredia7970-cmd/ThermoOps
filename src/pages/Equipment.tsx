@@ -2,10 +2,17 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Plus, Wind, Activity, MoreHorizontal, AlertTriangle } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
-import { mockEquipment } from '../data/mockData';
+import { SkeletonTable } from '../components/ui/Skeleton';
+import { useApiList } from '../hooks/useApi';
+import { Equipment as EquipmentType } from '../types';
 
 export function Equipment() {
   const navigate = useNavigate();
+  const { data: equipmentList, loading } = useApiList<EquipmentType>('/equipment');
+  const healthy = equipmentList?.filter(e => e.status === 'Good').length ?? 0;
+  const needsAttention = equipmentList?.filter(e => e.status === 'Attention').length ?? 0;
+  const critical = equipmentList?.filter(e => e.status === 'Critical').length ?? 0;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
@@ -32,7 +39,7 @@ export function Equipment() {
             </div>
             <div>
               <p className="text-sm font-medium text-surface-500">Healthy Units</p>
-              <h3 className="text-2xl font-bold text-surface-900">842</h3>
+              <h3 className="text-2xl font-bold text-surface-900">{healthy}</h3>
             </div>
           </div>
         </Card>
@@ -43,7 +50,7 @@ export function Equipment() {
             </div>
             <div>
               <p className="text-sm font-medium text-surface-500">Requires Attention</p>
-              <h3 className="text-2xl font-bold text-surface-900">28</h3>
+              <h3 className="text-2xl font-bold text-surface-900">{needsAttention}</h3>
             </div>
           </div>
         </Card>
@@ -54,7 +61,7 @@ export function Equipment() {
             </div>
             <div>
               <p className="text-sm font-medium text-surface-500">Critical / Offline</p>
-              <h3 className="text-2xl font-bold text-surface-900">5</h3>
+              <h3 className="text-2xl font-bold text-surface-900">{critical}</h3>
             </div>
           </div>
         </Card>
@@ -83,6 +90,7 @@ export function Equipment() {
           </div>
         </div>
 
+        {loading ? <SkeletonTable /> : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-surface-500 uppercase bg-surface-50 border-b border-surface-200">
@@ -96,7 +104,7 @@ export function Equipment() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 bg-white">
-              {mockEquipment.map((eq) => (
+              {(equipmentList ?? []).map((eq) => (
                 <tr 
                   key={eq.id} 
                   onClick={() => navigate(`/equipment/${eq.id}`)}
@@ -135,6 +143,7 @@ export function Equipment() {
             </tbody>
           </table>
         </div>
+        )}
       </Card>
     </div>
   );

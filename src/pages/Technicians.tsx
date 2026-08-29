@@ -2,10 +2,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, MapPin, Star, Clock } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
-import { mockTechnicians } from '../data/mockData';
+import { SkeletonCard } from '../components/ui/Skeleton';
+import { useApiList } from '../hooks/useApi';
+import { Technician } from '../types';
 
 export function Technicians() {
   const navigate = useNavigate();
+  const { data: technicians, loading } = useApiList<Technician>('/technicians');
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
@@ -43,7 +46,8 @@ export function Technicians() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {mockTechnicians.map((tech) => (
+        {loading && Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+        {(technicians ?? []).map((tech) => (
           <Card 
             key={tech.id} 
             onClick={() => navigate(`/technicians/${tech.id}`)}

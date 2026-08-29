@@ -9,6 +9,7 @@ import { cn } from '../../lib/utils';
 import { Button } from '../ui';
 import { CommandBar } from './CommandBar';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const NAV_ITEMS = [
   { group: 'OPERATIONS', items: [
@@ -99,6 +100,8 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean, onClose?: () =>
 }
 
 export function Header({ onProfileClick, onMenuClick }: { onProfileClick: () => void, onMenuClick: () => void }) {
+  const { user } = useAuth();
+
   return (
     <header className="h-16 bg-white border-b border-surface-200 px-4 md:px-6 flex items-center justify-between sticky top-0 z-20 print:hidden">
       <div className="flex items-center gap-4 flex-1">
@@ -131,11 +134,11 @@ export function Header({ onProfileClick, onMenuClick }: { onProfileClick: () => 
         
         <button onClick={onProfileClick} className="flex items-center gap-3 pl-1 cursor-pointer hover:bg-surface-50 p-1 rounded-lg transition-colors text-left focus:outline-none">
           <div className="text-right hidden md:block">
-            <p className="text-sm font-semibold text-surface-900 leading-tight">Admin User</p>
-            <p className="text-xs text-surface-500">Dispatcher</p>
+            <p className="text-sm font-semibold text-surface-900 leading-tight">{user?.name}</p>
+            <p className="text-xs text-surface-500">{user?.roles[0]}</p>
           </div>
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-sm shadow-sm ring-2 ring-transparent focus:ring-primary-500">
-            AD
+            {user?.avatar}
           </div>
         </button>
       </div>
@@ -145,6 +148,7 @@ export function Header({ onProfileClick, onMenuClick }: { onProfileClick: () => 
 
 export function ProfileDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   if (!isOpen) return null;
@@ -152,6 +156,11 @@ export function ProfileDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: (
   const navigateTo = (path: string) => {
     navigate(path);
     onClose();
+  };
+
+  const handleSignOut = () => {
+    onClose();
+    logout();
   };
 
   return (
@@ -167,13 +176,13 @@ export function ProfileDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: (
             <X className="w-5 h-5" />
           </button>
           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-xl shadow-md">
-            AD
+            {user?.avatar}
           </div>
           <div>
-            <h2 className="text-lg font-bold text-surface-900">Admin User</h2>
-            <p className="text-sm text-surface-500">admin@thermoops.com</p>
+            <h2 className="text-lg font-bold text-surface-900">{user?.name}</h2>
+            <p className="text-sm text-surface-500">{user?.email}</p>
             <div className="mt-1 inline-flex px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 text-xs font-semibold">
-              Super Admin
+              {user?.roles[0]}
             </div>
           </div>
         </div>
@@ -217,7 +226,7 @@ export function ProfileDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: (
         </div>
 
         <div className="p-4 border-t border-surface-100">
-          <Button variant="ghost" className="w-full justify-start text-error-600 hover:text-error-700 hover:bg-error-50">
+          <Button onClick={handleSignOut} variant="ghost" className="w-full justify-start text-error-600 hover:text-error-700 hover:bg-error-50">
             <LogOut className="w-5 h-5 mr-3" />
             Sign Out
           </Button>

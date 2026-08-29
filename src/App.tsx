@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { Dashboard } from './pages/Dashboard';
 import { WorkOrders } from './pages/WorkOrders';
@@ -19,11 +20,19 @@ import { Reports } from './pages/Reports';
 import { ReportViewer } from './pages/profiles/ReportViewer';
 import { Settings } from './pages/Settings';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+function AuthGate() {
+  const { user, isLoading } = useAuth();
 
-  if (!isAuthenticated) {
-    return <Login onLogin={() => setIsAuthenticated(true)} />;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface-50">
+        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login />;
   }
 
   return (
@@ -51,6 +60,14 @@ function App() {
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AuthGate />
+    </AuthProvider>
   );
 }
 

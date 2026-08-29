@@ -1,9 +1,15 @@
 import React from 'react';
-import { Package, Search, Filter, ArrowDown, ArrowUp, AlertCircle, Plus } from 'lucide-react';
+import { Package, Search, Filter, ArrowDown, AlertCircle, Plus } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
-import { mockInventory } from '../data/mockData';
+import { SkeletonTable } from '../components/ui/Skeleton';
+import { useApiList } from '../hooks/useApi';
+import { InventoryItem } from '../types';
 
 export function Inventory() {
+  const { data: items, loading } = useApiList<InventoryItem>('/inventory-items');
+  const list = items ?? [];
+  const lowStockCount = list.filter(i => i.status === 'Low Stock').length;
+  const outOfStockCount = list.filter(i => i.status === 'Out of Stock').length;
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -25,7 +31,7 @@ export function Inventory() {
           <div className="p-5 flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-surface-500 mb-1">Total Items in Catalog</p>
-              <h3 className="text-2xl font-bold text-surface-900">1,248</h3>
+              <h3 className="text-2xl font-bold text-surface-900">{list.length}</h3>
             </div>
             <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center text-primary-600">
               <Package className="w-5 h-5" />
@@ -37,7 +43,7 @@ export function Inventory() {
           <div className="p-5 flex items-center justify-between border-l-4 border-warning-500">
             <div>
               <p className="text-sm font-medium text-surface-500 mb-1">Low Stock Alerts</p>
-              <h3 className="text-2xl font-bold text-surface-900">12</h3>
+              <h3 className="text-2xl font-bold text-surface-900">{lowStockCount}</h3>
             </div>
             <div className="w-10 h-10 bg-warning-50 rounded-lg flex items-center justify-center text-warning-600">
               <AlertCircle className="w-5 h-5" />
@@ -49,7 +55,7 @@ export function Inventory() {
           <div className="p-5 flex items-center justify-between border-l-4 border-error-500">
             <div>
               <p className="text-sm font-medium text-surface-500 mb-1">Out of Stock</p>
-              <h3 className="text-2xl font-bold text-surface-900">4</h3>
+              <h3 className="text-2xl font-bold text-surface-900">{outOfStockCount}</h3>
             </div>
             <div className="w-10 h-10 bg-error-50 rounded-lg flex items-center justify-center text-error-600">
               <ArrowDown className="w-5 h-5" />
@@ -84,6 +90,7 @@ export function Inventory() {
           </div>
         </div>
 
+        {loading ? <SkeletonTable /> : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-surface-500 uppercase bg-surface-50 border-b border-surface-200">
@@ -98,7 +105,7 @@ export function Inventory() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 bg-white">
-              {mockInventory.map((item) => {
+              {list.map((item) => {
                 const stockRatio = item.availableStock / Math.max(item.lowStockThreshold, 1);
                 
                 return (
@@ -147,6 +154,7 @@ export function Inventory() {
             </tbody>
           </table>
         </div>
+        )}
       </Card>
     </div>
   );

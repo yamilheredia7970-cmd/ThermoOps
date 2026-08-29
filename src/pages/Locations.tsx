@@ -1,9 +1,13 @@
 import React from 'react';
 import { Search, MapPin, Plus, MoreHorizontal } from 'lucide-react';
 import { Card, Button } from '../components/ui';
-import { mockLocations } from '../data/mockData';
+import { SkeletonTable } from '../components/ui/Skeleton';
+import { useApiList } from '../hooks/useApi';
+import { Location } from '../types';
 
 export function Locations() {
+  const { data: locations, loading } = useApiList<Location>('/locations');
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -29,6 +33,7 @@ export function Locations() {
           </div>
         </div>
 
+        {loading ? <SkeletonTable /> : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-surface-500 uppercase bg-surface-50 border-b border-surface-200">
@@ -42,7 +47,7 @@ export function Locations() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 bg-white">
-              {mockLocations.map((loc) => (
+              {(locations ?? []).map((loc) => (
                 <tr key={loc.id} className="hover:bg-surface-50 transition-colors cursor-pointer group">
                   <td className="px-5 py-4">
                     <div className="font-semibold text-surface-900 flex items-center gap-2">
@@ -72,6 +77,7 @@ export function Locations() {
             </tbody>
           </table>
         </div>
+        )}
       </Card>
     </div>
   );

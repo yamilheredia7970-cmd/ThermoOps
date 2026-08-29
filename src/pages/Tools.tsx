@@ -1,9 +1,12 @@
 import React from 'react';
-import { Search, Plus, PenTool, Wrench } from 'lucide-react';
+import { Search, Plus, PenTool } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
-import { mockTools } from '../data/mockData';
+import { SkeletonTable } from '../components/ui/Skeleton';
+import { useApiList } from '../hooks/useApi';
+import { Tool } from '../types';
 
 export function Tools() {
+  const { data: tools, loading } = useApiList<Tool>('/tools');
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -37,6 +40,7 @@ export function Tools() {
           </div>
         </div>
 
+        {loading ? <SkeletonTable /> : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-surface-500 uppercase bg-surface-50 border-b border-surface-200">
@@ -50,7 +54,7 @@ export function Tools() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 bg-white">
-              {mockTools.map((tool) => (
+              {(tools ?? []).map((tool) => (
                 <tr key={tool.id} className="hover:bg-surface-50 transition-colors">
                   <td className="px-5 py-4 whitespace-nowrap">
                     <div className="font-semibold text-surface-900 flex items-center gap-2">
@@ -90,6 +94,7 @@ export function Tools() {
             </tbody>
           </table>
         </div>
+        )}
       </Card>
     </div>
   );

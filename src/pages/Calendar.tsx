@@ -1,10 +1,15 @@
 import React from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, AlertTriangle, Search } from 'lucide-react';
 import { Button, Card } from '../components/ui';
-import { mockTechnicians, mockWorkOrders } from '../data/mockData';
-import { WorkOrder } from '../types';
+import { useApiList } from '../hooks/useApi';
+import { WorkOrder, Technician } from '../types';
 
 export function DispatchCalendar() {
+  const { data: technicians } = useApiList<Technician>('/technicians');
+  const { data: workOrders } = useApiList<WorkOrder>('/work-orders');
+  const mockTechnicians = technicians ?? [];
+  const mockWorkOrders = workOrders ?? [];
+
   const START_HOUR = 7; // 7 AM
   const END_HOUR = 18; // 6 PM
   const ROW_HEIGHT = 80; // pixels per hour
@@ -20,7 +25,7 @@ export function DispatchCalendar() {
   // Detect conflicts within a single technician's day
   const getConflictGroups = (orders: WorkOrder[]) => {
     const sorted = [...orders].sort((a, b) => getOffsetHours(a.scheduledTime) - getOffsetHours(b.scheduledTime));
-    const conflicts = new Set<string>();
+    const conflicts = new Set<number>();
     
     for (let i = 0; i < sorted.length; i++) {
       for (let j = i + 1; j < sorted.length; j++) {

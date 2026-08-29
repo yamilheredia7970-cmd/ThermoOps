@@ -4,7 +4,7 @@ export type EquipmentStatus = 'Good' | 'Attention' | 'Critical';
 export type InventoryStatus = 'In Stock' | 'Low Stock' | 'Out of Stock';
 
 export interface Customer {
-  id: string;
+  id: number;
   name: string;
   type: 'Commercial' | 'Residential' | 'Industrial';
   since: string;
@@ -15,40 +15,40 @@ export interface Customer {
 }
 
 export interface Location {
-  id: string;
-  customerId: string;
+  id: number;
+  customerId: number;
   customerName: string;
   name: string;
   address: string;
-  contactName: string;
-  contactPhone: string;
+  contactName: string | null;
+  contactPhone: string | null;
   equipmentCount: number;
-  lastVisit: string;
-  nextMaintenance: string;
+  lastVisit: string | null;
+  nextMaintenance: string | null;
 }
 
 export interface Equipment {
-  id: string;
-  customerId: string;
-  locationId: string;
+  id: number;
+  customerId: number;
+  locationId: number;
   type: string;
   brand: string;
   model: string;
   serialNumber: string;
-  installationDate: string;
-  warrantyExpiration: string;
+  installationDate: string | null;
+  warrantyExpiration: string | null;
   status: EquipmentStatus;
   locationName: string;
 }
 
 export interface Technician {
-  id: string;
+  id: number;
   name: string;
   email: string;
   avatar: string;
   skills: string[];
   status: 'On Site' | 'Available' | 'Off Duty' | 'In Transit';
-  currentJobId?: string;
+  currentJobId?: number | null;
   jobsToday: number;
   hoursThisWeek: number;
   rating: number;
@@ -56,15 +56,15 @@ export interface Technician {
 }
 
 export interface WorkOrder {
-  id: string;
-  customerId: string;
+  id: number;
+  customerId: number;
   customerName: string;
-  locationId: string;
+  locationId: number;
   locationName: string;
-  equipmentId?: string;
-  equipmentName?: string;
-  technicianId?: string;
-  technicianName?: string;
+  equipmentId?: number | null;
+  equipmentName?: string | null;
+  technicianId?: number | null;
+  technicianName?: string | null;
   serviceType: 'Maintenance' | 'Repair' | 'Installation' | 'Inspection';
   status: WorkOrderStatus;
   priority: Priority;
@@ -75,7 +75,7 @@ export interface WorkOrder {
 }
 
 export interface InventoryItem {
-  id: string;
+  id: number;
   partName: string;
   sku: string;
   category: string;
@@ -86,7 +86,8 @@ export interface InventoryItem {
 }
 
 export interface MaintenancePlan {
-  id: string;
+  id: number;
+  customerId: number;
   customerName: string;
   planName: string;
   equipmentCount: number;
@@ -96,21 +97,22 @@ export interface MaintenancePlan {
 }
 
 export interface Tool {
-  id: string;
+  id: number;
   name: string;
   brand: string;
   category: string;
   status: 'Available' | 'Assigned' | 'Maintenance' | 'Out of Service';
-  assignedTo?: string;
-  lastInspection: string;
+  assignedTo?: string | null;
+  lastInspection: string | null;
 }
 
 export interface ServiceReport {
-  id: string;
+  id: number;
+  workOrderId: number;
   date: string;
   customerName: string;
   locationName: string;
-  technicianName: string;
+  technicianName: string | null;
   type: string;
   status: 'Signed' | 'Pending Signature' | 'Draft';
   amount?: number;
@@ -125,4 +127,3 @@ export interface Activity {
   relatedId?: string; // e.g. Customer ID, WO ID
   actor?: string; // e.g. "John Doe" or "System"
 }
-

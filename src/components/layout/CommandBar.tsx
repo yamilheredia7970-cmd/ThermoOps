@@ -1,13 +1,31 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ClipboardList, Wind, Users } from 'lucide-react';
-import { mockCustomers, mockEquipment, mockWorkOrders } from '../../data/mockData';
+import { api, ApiCollection } from '../../lib/api';
+import { Customer, Equipment, WorkOrder } from '../../types';
 
 export function CommandBar() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Snapshot fetched once per open; good enough for a command-palette-sized dataset.
+  useEffect(() => {
+    if (!isOpen) return;
+    Promise.all([
+      api.get<ApiCollection<Customer>>('/customers'),
+      api.get<ApiCollection<Equipment>>('/equipment'),
+      api.get<ApiCollection<WorkOrder>>('/work-orders'),
+    ]).then(([c, e, w]) => {
+      setCustomers(c.data);
+      setEquipment(e.data);
+      setWorkOrders(w.data);
+    }).catch(() => {});
+  }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -34,16 +52,17 @@ export function CommandBar() {
 
   if (!isOpen) return null;
 
+  const q = query.toLowerCase();
   const results = [
-    ...mockWorkOrders
-      .filter(w => w.id.toLowerCase().includes(query.toLowerCase()) || w.description.toLowerCase().includes(query.toLowerCase()))
-      .map(w => ({ id: w.id, title: `${w.id} - ${w.serviceType}`, type: 'WorkOrder', url: `/work-orders`, icon: ClipboardList })),
-    ...mockCustomers
-      .filter(c => c.name.toLowerCase().includes(query.toLowerCase()) || c.id.toLowerCase().includes(query.toLowerCase()))
-      .map(c => ({ id: c.id, title: c.name, type: 'Customer', url: `/customers/${c.id}`, icon: Users })),
-    ...mockEquipment
-      .filter(e => e.id.toLowerCase().includes(query.toLowerCase()) || e.model.toLowerCase().includes(query.toLowerCase()))
-      .map(e => ({ id: e.id, title: `${e.brand} ${e.model}`, type: 'Equipment', url: `/equipment/${e.id}`, icon: Wind }))
+    ...workOrders
+      .filter(w => String(w.id).includes(q) || w.description.toLowerCase().includes(q))
+      .map(w => ({ id: `wo-${w.id}`, title: `WO-${w.id} - ${w.serviceType}`, type: 'WorkOrder', url: `/work-orders`, icon: ClipboardList })),
+    ...customers
+      .filter(c => c.name.toLowerCase().includes(q))
+      .map(c => ({ id: `c-${c.id}`, title: c.name, type: 'Customer', url: `/customers/${c.id}`, icon: Users })),
+    ...equipment
+      .filter(e => e.model.toLowerCase().includes(q) || e.brand.toLowerCase().includes(q))
+      .map(e => ({ id: `eq-${e.id}`, title: `${e.brand} ${e.model}`, type: 'Equipment', url: `/equipment/${e.id}`, icon: Wind }))
   ].slice(0, 8); // Max 8 results
 
   const handleSelect = (url: string) => {

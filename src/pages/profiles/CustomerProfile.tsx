@@ -1,29 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Wind, Building2 } from 'lucide-react';
 import { Card, Badge, Button } from '../../components/ui';
 import { Skeleton, SkeletonCard, SkeletonTable } from '../../components/ui/Skeleton';
 import { ActivityFeed } from '../../components/ActivityFeed';
-import { mockCustomers, mockLocations, mockEquipment, mockWorkOrders, mockActivities } from '../../data/mockData';
+import { useApiResource, useApiList } from '../../hooks/useApi';
+import { Customer, Location, Equipment, WorkOrder } from '../../types';
 
 export function CustomerProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'locations' | 'equipment' | 'workorders'>('locations');
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, [id]);
+  const { data: customer, loading } = useApiResource<Customer>(id ? `/customers/${id}` : null);
+  const { data: customerLocations } = useApiList<Location>(id ? `/locations?customer_id=${id}` : null);
+  const { data: customerEquipment } = useApiList<Equipment>(id ? `/equipment?customer_id=${id}` : null);
+  const { data: customerOrders } = useApiList<WorkOrder>(id ? `/work-orders?customer_id=${id}` : null);
 
-  const customer = mockCustomers.find(c => c.id === id) || mockCustomers[0];
-  const customerLocations = mockLocations.filter(l => l.customerId === customer.id);
-  const customerEquipment = mockEquipment.filter(e => e.customerId === customer.id);
-  const customerOrders = mockWorkOrders.filter(wo => wo.customerId === customer.id);
-  const customerActivities = mockActivities.filter(a => a.relatedId === customer.id);
-
-  if (loading) {
+  if (loading || !customer) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -62,7 +56,7 @@ export function CustomerProfile() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-5 flex flex-col gap-1 border-l-4 border-l-primary-500">
           <span className="text-sm font-medium text-surface-500">Total Locations</span>
           <span className="text-3xl font-bold text-surface-900">{customer.locationsCount}</span>
@@ -75,10 +69,6 @@ export function CustomerProfile() {
           <span className="text-sm font-medium text-surface-500">Active Work Orders</span>
           <span className="text-3xl font-bold text-surface-900">{customer.activeWorkOrders}</span>
         </Card>
-        <Card className="p-5 flex flex-col gap-1 border-l-4 border-l-success-500">
-          <span className="text-sm font-medium text-surface-500">YTD Revenue</span>
-          <span className="text-3xl font-bold text-surface-900">$24,500</span>
-        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -89,8 +79,8 @@ export function CustomerProfile() {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`pb-3 text-sm font-semibold capitalize border-b-2 transition-colors ${
-                  activeTab === tab 
-                    ? 'border-primary-600 text-primary-700' 
+                  activeTab === tab
+                    ? 'border-primary-600 text-primary-700'
                     : 'border-transparent text-surface-500 hover:text-surface-700'
                 }`}
               >
@@ -98,11 +88,11 @@ export function CustomerProfile() {
               </button>
             ))}
           </div>
-          
+
           <div className="p-0 flex-1 overflow-auto">
             {activeTab === 'locations' && (
               <div className="divide-y divide-surface-100">
-                {customerLocations.map(loc => (
+                {(customerLocations ?? []).map(loc => (
                   <div key={loc.id} className="p-4 flex items-center justify-between hover:bg-surface-50">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-surface-100 flex items-center justify-center text-surface-500">
@@ -124,7 +114,7 @@ export function CustomerProfile() {
 
             {activeTab === 'equipment' && (
               <div className="divide-y divide-surface-100">
-                {customerEquipment.map(eq => (
+                {(customerEquipment ?? []).map(eq => (
                   <div key={eq.id} className="p-4 flex items-center justify-between hover:bg-surface-50 cursor-pointer" onClick={() => navigate(`/equipment/${eq.id}`)}>
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-surface-100 flex items-center justify-center text-surface-500">
@@ -143,7 +133,7 @@ export function CustomerProfile() {
 
             {activeTab === 'workorders' && (
               <div className="divide-y divide-surface-100">
-                {customerOrders.length > 0 ? customerOrders.map(wo => (
+                {(customerOrders ?? []).length > 0 ? (customerOrders ?? []).map(wo => (
                   <div key={wo.id} className="p-4 flex items-center justify-between hover:bg-surface-50">
                     <div>
                       <h4 className="font-semibold text-surface-900">{wo.serviceType}</h4>
@@ -165,7 +155,8 @@ export function CustomerProfile() {
           </div>
         </Card>
 
-        <ActivityFeed activities={customerActivities} className="h-full" />
+        {/* Real activity feed isn't wired up yet (no Activities API); shown empty rather than stale mock data. */}
+        <ActivityFeed activities={[]} className="h-full" />
       </div>
     </div>
   );

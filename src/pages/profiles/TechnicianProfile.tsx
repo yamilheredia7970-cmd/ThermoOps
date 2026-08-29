@@ -1,36 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, Clock, MapPin, CheckCircle, AlertCircle, Wrench } from 'lucide-react';
+import { ArrowLeft, Star, Clock, MapPin, CheckCircle, Wrench } from 'lucide-react';
 import { Card, Badge, Button } from '../../components/ui';
 import { Skeleton, SkeletonCard } from '../../components/ui/Skeleton';
 import { ActivityFeed } from '../../components/ActivityFeed';
-import { mockTechnicians, mockWorkOrders, mockActivities } from '../../data/mockData';
+import { useApiResource, useApiList } from '../../hooks/useApi';
+import { Technician, WorkOrder } from '../../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
-const performanceData = [
-  { name: 'Mon', hours: 8, jobs: 3 },
-  { name: 'Tue', hours: 7.5, jobs: 4 },
-  { name: 'Wed', hours: 9, jobs: 3 },
-  { name: 'Thu', hours: 8, jobs: 5 },
-  { name: 'Fri', hours: 0, jobs: 0 },
-];
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export function TechnicianProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, [id]);
-  
-  const tech = mockTechnicians.find(t => t.id === id) || mockTechnicians[0];
-  const techOrders = mockWorkOrders.filter(wo => wo.technicianId === tech.id);
-  const currentJob = techOrders.find(wo => wo.id === tech.currentJobId);
-  const techActivities = mockActivities.filter(a => a.actor === tech.name);
+  const { data: tech, loading } = useApiResource<Technician>(id ? `/technicians/${id}` : null);
+  const { data: techOrders } = useApiList<WorkOrder>(id ? `/work-orders?technician_id=${id}` : null);
 
-  if (loading) {
+  const orders = techOrders ?? [];
+  const currentJob = orders.find(wo => wo.id === tech?.currentJobId);
+
+  const performanceData = WEEKDAYS.map(day => {
+    const dayOrders = orders.filter(wo => {
+      const d = new Date(wo.scheduledDate + 'T00:00:00');
+      return WEEKDAYS[(d.getDay() + 6) % 7] === day;
+    });
+    return {
+      name: day,
+      hours: dayOrders.reduce((sum, wo) => sum + wo.durationHours, 0),
+      jobs: dayOrders.filter(wo => wo.status === 'Completed').length,
+    };
+  });
+
+  if (loading || !tech) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -73,19 +75,19 @@ export function TechnicianProfile() {
         <div className="space-y-6">
           <Card className="p-6 flex flex-col items-center text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-br from-primary-600 to-primary-800"></div>
-            
+
             <div className="relative z-10 w-24 h-24 rounded-full bg-white p-1 shadow-md mb-4 mt-8">
               <div className="w-full h-full rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-3xl font-bold">
                 {tech.avatar}
               </div>
             </div>
-            
+
             <h2 className="text-xl font-bold text-surface-900">{tech.name}</h2>
             <p className="text-sm text-surface-500 mb-4">{tech.email}</p>
-            
+
             <Badge variant={
-              tech.status === 'Available' ? 'success' : 
-              tech.status === 'On Site' ? 'warning' : 
+              tech.status === 'Available' ? 'success' :
+              tech.status === 'On Site' ? 'warning' :
               tech.status === 'In Transit' ? 'info' : 'default'
             } className="mb-6">
               {tech.status}
@@ -123,7 +125,7 @@ export function TechnicianProfile() {
                 <div className="pt-3 border-t border-surface-100">
                   <p className="text-sm text-surface-700">{currentJob.description}</p>
                 </div>
-                <Button className="w-full mt-2" variant="outline">View Work Order</Button>
+                <Button className="w-full mt-2" variant="outline" onClick={() => navigate('/work-orders')}>View Work Order</Button>
               </div>
             ) : (
               <div className="text-center py-6 text-surface-500">
@@ -155,7 +157,7 @@ export function TechnicianProfile() {
           </div>
 
           <Card className="p-6">
-            <h3 className="font-bold text-surface-900 mb-6">Weekly Hours vs. Jobs Completed</h3>
+            <h3 className="font-bold text-surface-900 mb-6">Scheduled Hours vs. Jobs Completed (This Week)</h3>
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -163,18 +165,19 @@ export function TechnicianProfile() {
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
                   <YAxis yAxisId="left" orientation="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
                   <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ fill: '#F3F4F6' }}
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
-                  <Bar yAxisId="left" dataKey="hours" name="Hours Worked" fill="#0369a1" radius={[4, 4, 0, 0]} barSize={32} />
+                  <Bar yAxisId="left" dataKey="hours" name="Hours Scheduled" fill="#0369a1" radius={[4, 4, 0, 0]} barSize={32} />
                   <Bar yAxisId="right" dataKey="jobs" name="Jobs Completed" fill="#38bdf8" radius={[4, 4, 0, 0]} barSize={32} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </Card>
-          
-          <ActivityFeed activities={techActivities} title="Technician Activity Log" />
+
+          {/* Real activity feed isn't wired up yet (no Activities API); shown empty rather than stale mock data. */}
+          <ActivityFeed activities={[]} title="Technician Activity Log" />
         </div>
       </div>
     </div>

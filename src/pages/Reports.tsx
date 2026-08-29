@@ -2,11 +2,14 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, FileText, Download, Filter } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
-import { mockReports } from '../data/mockData';
+import { SkeletonTable } from '../components/ui/Skeleton';
+import { useApiList } from '../hooks/useApi';
+import { ServiceReport } from '../types';
 import { formatCurrency } from '../lib/utils';
 
 export function Reports() {
   const navigate = useNavigate();
+  const { data: reports, loading } = useApiList<ServiceReport>('/service-reports');
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
@@ -37,6 +40,7 @@ export function Reports() {
           </div>
         </div>
 
+        {loading ? <SkeletonTable /> : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-surface-500 uppercase bg-surface-50 border-b border-surface-200">
@@ -51,16 +55,16 @@ export function Reports() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 bg-white">
-              {mockReports.map((report) => (
-                <tr 
-                  key={report.id} 
+              {(reports ?? []).map((report) => (
+                <tr
+                  key={report.id}
                   onClick={() => navigate(`/reports/${report.id}`)}
                   className="hover:bg-surface-50 transition-colors cursor-pointer group"
                 >
                   <td className="px-5 py-4 whitespace-nowrap">
                     <div className="font-semibold text-surface-900 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-surface-400" />
-                      {report.id}
+                      REP-{report.id}
                     </div>
                     <div className="text-xs text-surface-500 mt-0.5 ml-6">{report.date}</div>
                   </td>
@@ -95,6 +99,7 @@ export function Reports() {
             </tbody>
           </table>
         </div>
+        )}
       </Card>
     </div>
   );
