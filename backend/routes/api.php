@@ -19,7 +19,8 @@ use App\Http\Controllers\Api\WorkOrdersController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware('throttle:6,1');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);

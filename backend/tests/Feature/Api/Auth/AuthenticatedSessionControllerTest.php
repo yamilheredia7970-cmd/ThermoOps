@@ -84,6 +84,23 @@ class AuthenticatedSessionControllerTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_repeated_failed_attempts_are_throttled(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('correct-password')]);
+
+        for ($i = 0; $i < 6; $i++) {
+            $this->postJson('/api/v1/login', [
+                'email' => $user->email,
+                'password' => 'wrong-password',
+            ])->assertUnprocessable();
+        }
+
+        $this->postJson('/api/v1/login', [
+            'email' => $user->email,
+            'password' => 'correct-password',
+        ])->assertStatus(429);
+    }
+
     public function test_logout_invalidates_the_session(): void
     {
         $user = User::factory()->create();
