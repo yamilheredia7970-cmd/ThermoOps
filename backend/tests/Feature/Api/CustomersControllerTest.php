@@ -134,6 +134,11 @@ class CustomersControllerTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('data.status', 'Inactive');
+        $this->assertDatabaseHas('activities', [
+            'title' => 'Customer Account Updated',
+            'subject_type' => 'Customer',
+            'subject_id' => $customer->id,
+        ]);
     }
 
     public function test_destroy_soft_deletes_for_admin(): void

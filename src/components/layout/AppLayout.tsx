@@ -3,11 +3,12 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, ClipboardList, CalendarDays, Users, 
   MapPin, Wind, Wrench, Package, PenTool, FileText, 
-  Settings, Bell, Menu, Search, User, Shield, LogOut, Sun, Moon, ChevronRight, X
+  Settings, Menu, Search, User, Shield, LogOut, Sun, Moon, ChevronRight, X
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui';
 import { CommandBar } from './CommandBar';
+import { NotificationBell } from './NotificationBell';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -125,11 +126,8 @@ export function Header({ onProfileClick, onMenuClick }: { onProfileClick: () => 
       </div>
       
       <div className="flex items-center gap-3">
-        <button className="relative p-2 text-surface-500 hover:text-surface-900 transition-colors rounded-lg hover:bg-surface-50">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error-500 rounded-full border-2 border-white"></span>
-        </button>
-        
+        <NotificationBell />
+
         <div className="h-8 w-px bg-surface-200 mx-1"></div>
         
         <button onClick={onProfileClick} className="flex items-center gap-3 pl-1 cursor-pointer hover:bg-surface-50 p-1 rounded-lg transition-colors text-left focus:outline-none">

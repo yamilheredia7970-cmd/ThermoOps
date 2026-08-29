@@ -7,6 +7,7 @@ use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Http\Resources\CustomerResource;
 use App\Models\Customer;
+use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -14,6 +15,8 @@ use Illuminate\Http\Response;
 
 class CustomersController extends Controller
 {
+    public function __construct(private readonly ActivityLogger $activity) {}
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Customer::class);
@@ -60,6 +63,14 @@ class CustomersController extends Controller
     public function update(UpdateCustomerRequest $request, Customer $customer): CustomerResource
     {
         $customer->update($request->validated());
+
+        $this->activity->log(
+            'Customer',
+            'Customer Account Updated',
+            "{$customer->name}'s account details were updated.",
+            $customer,
+            $request->user(),
+        );
 
         return new CustomerResource($customer->loadCount([
             'locations',

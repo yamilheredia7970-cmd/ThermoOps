@@ -103,6 +103,32 @@ class EquipmentControllerTest extends TestCase
         ]);
     }
 
+    public function test_update_changing_status_logs_an_activity(): void
+    {
+        $equipment = Equipment::factory()->create(['status' => 'Good']);
+
+        $this->actingAs($this->userWithRole('Admin'))
+            ->putJson("/api/v1/equipment/{$equipment->id}", ['status' => 'Critical'])
+            ->assertOk();
+
+        $this->assertDatabaseHas('activities', [
+            'title' => 'Equipment Status Changed',
+            'subject_type' => 'Equipment',
+            'subject_id' => $equipment->id,
+        ]);
+    }
+
+    public function test_update_without_a_status_change_logs_no_activity(): void
+    {
+        $equipment = Equipment::factory()->create(['status' => 'Good', 'brand' => 'Carrier']);
+
+        $this->actingAs($this->userWithRole('Admin'))
+            ->putJson("/api/v1/equipment/{$equipment->id}", ['brand' => 'Trane'])
+            ->assertOk();
+
+        $this->assertDatabaseMissing('activities', ['title' => 'Equipment Status Changed']);
+    }
+
     public function test_destroy_soft_deletes_for_admin(): void
     {
         $equipment = Equipment::factory()->create();

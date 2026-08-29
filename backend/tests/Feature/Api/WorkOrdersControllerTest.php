@@ -2,14 +2,21 @@
 
 namespace Tests\Feature\Api;
 
+use App\Events\ActivityLogged;
+use App\Events\InventoryLowStock;
+use App\Events\WorkOrderSaved;
+use App\Models\Activity;
 use App\Models\Customer;
 use App\Models\Equipment;
 use App\Models\InventoryItem;
 use App\Models\Location;
 use App\Models\User;
 use App\Models\WorkOrder;
+use App\Notifications\WorkOrderAssigned;
 use App\Services\InventoryLedger;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -299,5 +306,115 @@ class WorkOrdersControllerTest extends TestCase
 
         $this->assertSoftDeleted($workOrder);
         $this->assertSame(0, $item->fresh()->reserved);
+    }
+
+    public function test_update_to_completed_broadcasts_low_stock_when_consumption_crosses_the_threshold(): void
+    {
+        Event::fake([InventoryLowStock::class]);
+        $workOrder = WorkOrder::factory()->create(['status' => 'In Progress']);
+        $item = InventoryItem::factory()->create(['available_stock' => 5, 'reserved' => 0, 'low_stock_threshold' => 3]);
+        $workOrder->lineItems()->create([
+            'type' => 'part', 'description' => $item->part_name, 'inventory_item_id' => $item->id,
+            'quantity' => 3, 'unit_price' => $item->unit_cost,
+        ]);
+        app(InventoryLedger::class)->reserve($item, 3, $workOrder, null);
+
+        $this->actingAs($this->userWithRole('Admin'))->putJson("/api/v1/work-orders/{$workOrder->id}", [
+            'status' => 'Completed',
+        ]);
+
+        // 5 - 3 = 2, at or below the threshold of 3.
+        Event::assertDispatched(InventoryLowStock::class, fn ($event) => $event->item->is($item));
+    }
+
+    public function test_store_broadcasts_work_order_saved(): void
+    {
+        Event::fake([WorkOrderSaved::class]);
+        $location = Location::factory()->create();
+
+        $this->actingAs($this->userWithRole('Admin'))->postJson('/api/v1/work-orders', $this->payloadFor($location));
+
+        Event::assertDispatched(WorkOrderSaved::class);
+    }
+
+    public function test_update_broadcasts_work_order_saved(): void
+    {
+        Event::fake([WorkOrderSaved::class]);
+        $workOrder = WorkOrder::factory()->create(['status' => 'Scheduled']);
+
+        $this->actingAs($this->userWithRole('Dispatcher'))->putJson("/api/v1/work-orders/{$workOrder->id}", [
+            'status' => 'In Progress',
+        ]);
+
+        Event::assertDispatched(WorkOrderSaved::class, fn ($event) => $event->workOrder->is($workOrder));
+    }
+
+    public function test_store_logs_an_activity_and_notifies_the_assigned_technician(): void
+    {
+        Event::fake([ActivityLogged::class]);
+        Notification::fake();
+        $location = Location::factory()->create();
+        $technician = $this->technician();
+
+        $this->actingAs($this->userWithRole('Admin'))->postJson(
+            '/api/v1/work-orders',
+            $this->payloadFor($location, ['technician_id' => $technician->id])
+        )->assertCreated();
+
+        $this->assertDatabaseHas('activities', ['title' => 'New Work Order Dispatched']);
+        Event::assertDispatched(ActivityLogged::class);
+        Notification::assertSentTo($technician, WorkOrderAssigned::class);
+    }
+
+    public function test_store_without_a_technician_does_not_send_an_assignment_notification(): void
+    {
+        Notification::fake();
+        $location = Location::factory()->create();
+
+        $this->actingAs($this->userWithRole('Admin'))->postJson('/api/v1/work-orders', $this->payloadFor($location))
+            ->assertCreated();
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_update_logs_an_activity_when_the_status_changes(): void
+    {
+        $workOrder = WorkOrder::factory()->create(['status' => 'Scheduled']);
+        $actor = $this->userWithRole('Dispatcher');
+
+        $this->actingAs($actor)->putJson("/api/v1/work-orders/{$workOrder->id}", [
+            'status' => 'In Progress',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('activities', [
+            'title' => 'Work Order Started',
+            'subject_type' => 'WorkOrder',
+            'subject_id' => $workOrder->id,
+        ]);
+    }
+
+    public function test_update_logs_a_reassignment_and_notifies_the_new_technician(): void
+    {
+        Notification::fake();
+        $workOrder = WorkOrder::factory()->create(['status' => 'Scheduled', 'technician_id' => null]);
+        $technician = $this->technician();
+
+        $this->actingAs($this->userWithRole('Dispatcher'))->putJson("/api/v1/work-orders/{$workOrder->id}", [
+            'technician_id' => $technician->id,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('activities', ['title' => 'Work Order Reassigned']);
+        Notification::assertSentTo($technician, WorkOrderAssigned::class);
+    }
+
+    public function test_update_without_a_status_or_technician_change_logs_nothing(): void
+    {
+        $workOrder = WorkOrder::factory()->create(['status' => 'Scheduled', 'priority' => 'Normal']);
+
+        $this->actingAs($this->userWithRole('Dispatcher'))->putJson("/api/v1/work-orders/{$workOrder->id}", [
+            'priority' => 'High',
+        ])->assertOk();
+
+        $this->assertSame(0, Activity::count());
     }
 }

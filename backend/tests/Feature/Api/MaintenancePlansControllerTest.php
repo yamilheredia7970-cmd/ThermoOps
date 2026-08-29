@@ -69,6 +69,10 @@ class MaintenancePlansControllerTest extends TestCase
         $response->assertCreated();
         $response->assertJsonPath('data.equipmentCount', 1);
         $response->assertJsonPath('data.status', 'Pending');
+        $this->assertDatabaseHas('activities', [
+            'title' => 'Maintenance Scheduled',
+            'subject_type' => 'MaintenancePlan',
+        ]);
     }
 
     public function test_store_rejects_equipment_belonging_to_a_different_customer(): void

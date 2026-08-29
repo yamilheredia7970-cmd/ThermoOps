@@ -5,7 +5,7 @@ import { Card, Badge, Button } from '../../components/ui';
 import { Skeleton, SkeletonCard, SkeletonTable } from '../../components/ui/Skeleton';
 import { ActivityFeed } from '../../components/ActivityFeed';
 import { useApiResource, useApiList } from '../../hooks/useApi';
-import { Customer, Location, Equipment, WorkOrder } from '../../types';
+import { Customer, Location, Equipment, WorkOrder, Activity } from '../../types';
 
 export function CustomerProfile() {
   const { id } = useParams();
@@ -16,6 +16,7 @@ export function CustomerProfile() {
   const { data: customerLocations } = useApiList<Location>(id ? `/locations?customer_id=${id}` : null);
   const { data: customerEquipment } = useApiList<Equipment>(id ? `/equipment?customer_id=${id}` : null);
   const { data: customerOrders } = useApiList<WorkOrder>(id ? `/work-orders?customer_id=${id}` : null);
+  const { data: activities } = useApiList<Activity>(id ? `/activities?subject_type=Customer&subject_id=${id}` : null);
 
   if (loading || !customer) {
     return (
@@ -155,8 +156,7 @@ export function CustomerProfile() {
           </div>
         </Card>
 
-        {/* Real activity feed isn't wired up yet (no Activities API); shown empty rather than stale mock data. */}
-        <ActivityFeed activities={[]} className="h-full" />
+        <ActivityFeed activities={activities ?? []} className="h-full" />
       </div>
     </div>
   );

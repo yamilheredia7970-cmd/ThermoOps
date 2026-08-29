@@ -5,7 +5,7 @@ import { Card, Badge, Button } from '../../components/ui';
 import { Skeleton, SkeletonCard } from '../../components/ui/Skeleton';
 import { ActivityFeed } from '../../components/ActivityFeed';
 import { useApiResource, useApiList } from '../../hooks/useApi';
-import { Equipment, WorkOrder } from '../../types';
+import { Equipment, WorkOrder, Activity as ActivityRecord } from '../../types';
 
 export function EquipmentProfile() {
   const { id } = useParams();
@@ -13,6 +13,7 @@ export function EquipmentProfile() {
 
   const { data: equipment, loading } = useApiResource<Equipment>(id ? `/equipment/${id}` : null);
   const { data: relatedOrdersData } = useApiList<WorkOrder>(id ? `/work-orders?equipment_id=${id}` : null);
+  const { data: activities } = useApiList<ActivityRecord>(id ? `/activities?subject_type=Equipment&subject_id=${id}` : null);
   const relatedOrders = relatedOrdersData ?? [];
 
   // Service history derived from real work orders on this equipment, plus
@@ -208,8 +209,7 @@ export function EquipmentProfile() {
             )}
           </Card>
 
-          {/* Real activity feed isn't wired up yet (no Activities API); shown empty rather than stale mock data. */}
-          <ActivityFeed activities={[]} title="Equipment Activity Log" />
+          <ActivityFeed activities={activities ?? []} title="Equipment Activity Log" />
         </div>
       </div>
     </div>
