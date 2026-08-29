@@ -5,17 +5,30 @@ import { Card, Badge, Button } from '../../components/ui';
 import { Skeleton, SkeletonCard } from '../../components/ui/Skeleton';
 import { ActivityFeed } from '../../components/ActivityFeed';
 import { useApiResource, useApiList } from '../../hooks/useApi';
-import { Technician, WorkOrder } from '../../types';
+import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../lib/api';
+import { Technician, WorkOrder, Activity as ActivityRecord } from '../../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const STATUS_OPTIONS: Technician['status'][] = ['Available', 'On Site', 'In Transit', 'Off Duty'];
 
 export function TechnicianProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, hasRole } = useAuth();
 
-  const { data: tech, loading } = useApiResource<Technician>(id ? `/technicians/${id}` : null);
+  const { data: tech, loading, reload } = useApiResource<Technician>(id ? `/technicians/${id}` : null);
   const { data: techOrders } = useApiList<WorkOrder>(id ? `/work-orders?technician_id=${id}` : null);
+  const { data: activities } = useApiList<ActivityRecord>(id ? `/activities?technician_id=${id}` : null);
+
+  const canChangeStatus = !!tech && (user?.id === tech.id || hasRole('Admin', 'Dispatcher'));
+
+  const changeStatus = async (status: string) => {
+    if (!id) return;
+    await api.patch(`/technicians/${id}/status`, { status });
+    reload();
+  };
 
   const orders = techOrders ?? [];
   const currentJob = orders.find(wo => wo.id === tech?.currentJobId);
@@ -85,13 +98,25 @@ export function TechnicianProfile() {
             <h2 className="text-xl font-bold text-surface-900">{tech.name}</h2>
             <p className="text-sm text-surface-500 mb-4">{tech.email}</p>
 
-            <Badge variant={
-              tech.status === 'Available' ? 'success' :
-              tech.status === 'On Site' ? 'warning' :
-              tech.status === 'In Transit' ? 'info' : 'default'
-            } className="mb-6">
-              {tech.status}
-            </Badge>
+            {canChangeStatus ? (
+              <select
+                value={tech.status}
+                onChange={(e) => changeStatus(e.target.value)}
+                className="mb-6 text-sm font-medium border border-surface-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                {STATUS_OPTIONS.map(status => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+            ) : (
+              <Badge variant={
+                tech.status === 'Available' ? 'success' :
+                tech.status === 'On Site' ? 'warning' :
+                tech.status === 'In Transit' ? 'info' : 'default'
+              } className="mb-6">
+                {tech.status}
+              </Badge>
+            )}
 
             <div className="w-full text-left">
               <h3 className="text-xs font-bold text-surface-400 uppercase tracking-wider mb-3">Core Skills</h3>
@@ -176,8 +201,7 @@ export function TechnicianProfile() {
             </div>
           </Card>
 
-          {/* Real activity feed isn't wired up yet (no Activities API); shown empty rather than stale mock data. */}
-          <ActivityFeed activities={[]} title="Technician Activity Log" />
+          <ActivityFeed activities={activities ?? []} title="Technician Activity Log" />
         </div>
       </div>
     </div>

@@ -2,13 +2,19 @@ import React from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, AlertTriangle, Search } from 'lucide-react';
 import { Button, Card } from '../components/ui';
 import { useApiList } from '../hooks/useApi';
+import { useDispatchBoardChannel } from '../hooks/useRealtime';
 import { WorkOrder, Technician } from '../types';
 
 export function DispatchCalendar() {
-  const { data: technicians } = useApiList<Technician>('/technicians');
-  const { data: workOrders } = useApiList<WorkOrder>('/work-orders');
+  const { data: technicians, reload: reloadTechnicians } = useApiList<Technician>('/technicians');
+  const { data: workOrders, reload: reloadWorkOrders } = useApiList<WorkOrder>('/work-orders');
   const mockTechnicians = technicians ?? [];
   const mockWorkOrders = workOrders ?? [];
+
+  useDispatchBoardChannel({
+    onWorkOrderSaved: reloadWorkOrders,
+    onTechnicianStatusChanged: reloadTechnicians,
+  });
 
   const START_HOUR = 7; // 7 AM
   const END_HOUR = 18; // 6 PM

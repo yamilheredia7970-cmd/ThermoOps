@@ -5,8 +5,9 @@ import { formatCurrency } from '../lib/utils';
 import { Card, CardHeader, CardTitle, CardContent, Badge } from '../components/ui';
 import { Skeleton, SkeletonCard, SkeletonTable } from '../components/ui/Skeleton';
 import { ActivityFeed } from '../components/ActivityFeed';
-import { useApiResource } from '../hooks/useApi';
-import { WorkOrder } from '../types';
+import { useApiResource, useApiList } from '../hooks/useApi';
+import { useDispatchBoardChannel } from '../hooks/useRealtime';
+import { WorkOrder, Activity } from '../types';
 import {
   ClipboardList,
   Wrench,
@@ -23,8 +24,15 @@ interface DashboardData {
 }
 
 export function Dashboard() {
-  const { data, loading } = useApiResource<DashboardData>('/dashboard');
+  const { data, loading, reload } = useApiResource<DashboardData>('/dashboard');
+  const { data: activities, reload: reloadActivities } = useApiList<Activity>('/activities?per_page=10');
   const [activeTab, setActiveTab] = useState<'overview' | 'schedule'>('overview');
+  useDispatchBoardChannel({
+    onWorkOrderSaved: reload,
+    onTechnicianStatusChanged: reload,
+    onInventoryLowStock: reload,
+    onActivityLogged: reloadActivities,
+  });
 
   if (loading || !data) {
     return (
@@ -139,8 +147,7 @@ export function Dashboard() {
         </Card>
 
         {/* Activity Feed */}
-        {/* Real activity feed isn't wired up yet (no Activities API); shown empty rather than stale mock data. */}
-        <ActivityFeed activities={[]} className="h-full flex flex-col" />
+        <ActivityFeed activities={activities ?? []} className="h-full flex flex-col" />
       </div>
 
         </>

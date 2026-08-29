@@ -63,4 +63,13 @@ class UserPolicy
     {
         return $user->hasAnyRole(['Admin', 'Dispatcher']) || $user->is($technician);
     }
+
+    /**
+     * Determine whether the user can change a technician's live
+     * availability status (e.g. checking in/out for the day).
+     */
+    public function updateTechnicianStatus(User $user, User $technician): bool
+    {
+        return $user->hasAnyRole(['Admin', 'Dispatcher']) || $user->is($technician);
+    }
 }

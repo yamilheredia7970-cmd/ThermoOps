@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Api;
 
+use App\Events\TechnicianStatusChanged;
 use App\Models\User;
 use App\Models\WorkOrder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -140,5 +142,53 @@ class TechniciansControllerTest extends TestCase
         $response->assertJsonPath('data.currentJobId', $inProgress->id);
         $response->assertJsonPath('data.jobsToday', 2);
         $response->assertJsonPath('data.hoursThisWeek', 3.5);
+    }
+
+    public function test_update_status_changes_availability_and_broadcasts(): void
+    {
+        Event::fake([TechnicianStatusChanged::class]);
+        $technician = $this->technician(['availability_status' => 'Available']);
+
+        $response = $this->actingAs($technician)->patchJson("/api/v1/technicians/{$technician->id}/status", [
+            'status' => 'On Site',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.status', 'On Site');
+        $this->assertSame('On Site', $technician->technicianProfile->fresh()->availability_status);
+        Event::assertDispatched(TechnicianStatusChanged::class, fn ($event) => $event->technician->is($technician) && $event->status === 'On Site');
+    }
+
+    public function test_update_status_allows_staff_to_change_another_technicians_status(): void
+    {
+        $technician = $this->technician();
+        $dispatcher = User::factory()->create();
+        $dispatcher->assignRole('Dispatcher');
+
+        $this->actingAs($dispatcher)->patchJson("/api/v1/technicians/{$technician->id}/status", [
+            'status' => 'Off Duty',
+        ])->assertOk();
+    }
+
+    public function test_update_status_is_forbidden_for_another_technician(): void
+    {
+        $technician = $this->technician();
+        $colleague = $this->technician();
+
+        $this->actingAs($colleague)->patchJson("/api/v1/technicians/{$technician->id}/status", [
+            'status' => 'Off Duty',
+        ])->assertForbidden();
+    }
+
+    public function test_update_status_rejects_an_invalid_value(): void
+    {
+        $technician = $this->technician();
+
+        $response = $this->actingAs($technician)->patchJson("/api/v1/technicians/{$technician->id}/status", [
+            'status' => 'On The Moon',
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('status');
     }
 }

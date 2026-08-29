@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\TechnicianStatusChanged;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateTechnicianStatusRequest;
 use App\Http\Resources\TechnicianResource;
 use App\Models\User;
 use App\Models\WorkOrder;
@@ -42,6 +44,20 @@ class TechniciansController extends Controller
             )], 'duration_hours')
             ->load('technicianProfile');
 
+        $this->attachCurrentJobIds(new Collection([$technician]));
+
+        return new TechnicianResource($technician);
+    }
+
+    public function updateStatus(UpdateTechnicianStatusRequest $request, User $technician): TechnicianResource
+    {
+        $status = $request->validated('status');
+
+        $technician->technicianProfile()->updateOrCreate([], ['availability_status' => $status]);
+
+        TechnicianStatusChanged::dispatch($technician, $status);
+
+        $technician->load('technicianProfile');
         $this->attachCurrentJobIds(new Collection([$technician]));
 
         return new TechnicianResource($technician);

@@ -12,6 +12,13 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Registered separately (rather than via withRouting's `channels:` shorthand)
+    // so /broadcasting/auth runs through the same stateful-SPA + Sanctum pipeline
+    // as the rest of the API, instead of the classic 'web' session/CSRF stack.
+    ->withBroadcasting(
+        __DIR__.'/../routes/channels.php',
+        ['prefix' => 'api', 'middleware' => ['api', 'auth:sanctum']],
+    )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
     })

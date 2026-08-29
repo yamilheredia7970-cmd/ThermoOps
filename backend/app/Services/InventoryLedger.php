@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\InventoryLowStock;
 use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
 use App\Models\User;
@@ -38,6 +39,8 @@ class InventoryLedger
             $item->decrement('available_stock', min($quantity, $item->available_stock));
             $this->recordTransaction($item, 'consume', $quantity, $workOrder, $actor);
         });
+
+        $this->notifyIfLow($item);
     }
 
     public function restock(InventoryItem $item, int $quantity, ?User $actor): void
@@ -46,6 +49,15 @@ class InventoryLedger
             $item->increment('available_stock', $quantity);
             $this->recordTransaction($item, 'restock', $quantity, null, $actor);
         });
+    }
+
+    private function notifyIfLow(InventoryItem $item): void
+    {
+        $item->refresh();
+
+        if ($item->stockStatus() !== 'In Stock') {
+            InventoryLowStock::dispatch($item);
+        }
     }
 
     private function recordTransaction(InventoryItem $item, string $type, int $quantity, ?WorkOrder $workOrder, ?User $actor): void

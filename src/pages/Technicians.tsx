@@ -4,11 +4,13 @@ import { Search, Plus, MapPin, Star, Clock } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import { useApiList } from '../hooks/useApi';
+import { useDispatchBoardChannel } from '../hooks/useRealtime';
 import { Technician } from '../types';
 
 export function Technicians() {
   const navigate = useNavigate();
-  const { data: technicians, loading } = useApiList<Technician>('/technicians');
+  const { data: technicians, loading, reload } = useApiList<Technician>('/technicians');
+  useDispatchBoardChannel({ onTechnicianStatusChanged: reload, onWorkOrderSaved: reload });
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
